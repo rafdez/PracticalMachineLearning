@@ -1,0 +1,77 @@
+# Practical Machine Learning - Course Project
+
+The purpose of this repository is the project of the course *Practical Machine Learning* which is part of the Coursera Data Science Specialization. The context of the project is the Human Activity Recognition (HAR).
+
+A training dataset from three sensors on the belt, forearm, arm, and dumbell of 6 participants is provided. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. The goal is to predict the manner in which they did the exercise. Another dataset of 20 new cases is also provided to test the accuracy of our prediction model.
+
+The details and dataset of the original experiment is available here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+ 
+
+## Getting and cleaning data
+
+The dataset provided is a subset of the [original](http://groupware.les.inf.puc-rio.br/static/WLE/WearableComputing_weight_lifting_exercises_biceps_curl_variations.csv), approximately 50%. It has 19622 observations and 160 variables. Only 52 of the 160 variables are from the three sensors (accelerometer, gyroscope and magnetometer) of the four devices (belt, arm, forearm and dumbbell), the rest are derived variables (mean, variance, standard deviation, max, min, amplitude, kurtosis, skewness, etc) computed from a sliding window of 2.5 seconds.
+
+I only use the 52 variables from the sensors because we have to predict the class based on only one observation. The values of the derived variables in the test dataset are nulls. 
+
+
+```{r data, cache=TRUE}
+train <- read.csv("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+test <- read.csv("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+
+
+belt <- c("roll_belt", "pitch_belt", "yaw_belt", "total_accel_belt", "gyros_belt_x", "gyros_belt_y", "gyros_belt_z", "accel_belt_x", "accel_belt_y", "accel_belt_z", "magnet_belt_x", "magnet_belt_y", "magnet_belt_z")
+
+arm <- c("roll_arm", "pitch_arm", "yaw_arm", "total_accel_arm", "gyros_arm_x", "gyros_arm_y", "gyros_arm_z", "accel_arm_x", "accel_arm_y", "accel_arm_z", "magnet_arm_x", "magnet_arm_y", "magnet_arm_z")
+
+dumbbell <- c("roll_dumbbell", "pitch_dumbbell", "yaw_dumbbell", "total_accel_dumbbell", "gyros_dumbbell_x", "gyros_dumbbell_y", "gyros_dumbbell_z", "accel_dumbbell_x", "accel_dumbbell_y", "accel_dumbbell_z", "magnet_dumbbell_x", "magnet_dumbbell_y",  "magnet_dumbbell_z")
+
+forearm <- c("roll_forearm", "pitch_forearm", "yaw_forearm", "total_accel_forearm", "gyros_forearm_x", "gyros_forearm_y", "gyros_forearm_z", "accel_forearm_x", "accel_forearm_y", "accel_forearm_z", "magnet_forearm_x", "magnet_forearm_y", "magnet_forearm_z")
+
+classe <- c("classe")
+
+
+train <- train[, c(belt, arm, dumbbell, forearm, classe)]
+test <- test[, c(belt, arm, dumbbell, forearm)]
+```
+
+
+## Training
+
+I use the caret package for training the model. The type of model is a random forest and the resampling method is cross-validation with 10 folds.
+
+
+```{r training, cache=TRUE}
+library(caret, quietly=TRUE, verbose=FALSE)
+
+control <- trainControl(method="cv", number=10)
+
+# reproducible analysis
+set.seed(825)
+
+fit  <- train(classe ~ ., data=train, method="rf", importance=TRUE, trControl=control)
+```
+
+```{r summary, echo=FALSE}
+fit
+```
+
+```{r importance}
+library(caret, quietly=TRUE, verbose=FALSE)
+varImp(fit)
+```
+
+
+## Prediction
+
+The prediction of the 20 cases of the test dataset provided are true which confirm the output of the training (accuracy 1).
+
+```{r prediction}
+predict(fit, newdata=test)
+```
+
+
+## Conclusion
+
+Although the results obtained using the random forest are fine, the training process takes a while so it might be worth looking for a faster method.
+
+
